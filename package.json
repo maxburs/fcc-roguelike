@@ -1,0 +1,16 @@
+{
+  "name": "maxs-fcc-roguelike",
+  "version": "0.0.1",
+  "description": "a very simple rouguelike dungeon crawler written for freecodecamp.com's react section",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "roguelike",
+    "react",
+    "free-code-camp"
+  ],
+  "author": "maxwell burson",
+  "license": "ISC"
+}
