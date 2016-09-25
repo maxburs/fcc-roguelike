@@ -1,35 +1,180 @@
+const viewMask = [
+    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 ];
+
+const cellStates = [
+    "hidden",   //0
+    "empty",    //1
+    "player",   //2
+    "wall",     //3
+    "enemy"     //4
+];
+//game may break if set to an even number, mask needs to be manualy updated upon a change
+const viewSide = 15;
+//the world does not use the "hidden" value
+var world = {
+    width: 49,
+    height: 99,
+    //array of columb arrays for x/y indexing
+    walls: [],
+    enemies: [],
+    player: { x: 0, y: 0},
+    composite: [],
+    getLocationValue: function(x, y) {
+        if (x < 0 || x > this.width || y < 0 || y > this.height) {
+            return 3;
+        }
+        return this.composite[x][y];
+    },
+    generateNew: function(){
+        //TESTING CODE
+        this.walls = [];
+        for (var w = 0; w < this.width + 1; w++){
+            this.walls.push([]);
+            for (let h = 0; h < this.height + 1; h++){
+                this.walls[w].push(1);
+            }
+        }
+        this.buildComposite();
+    },
+    buildComposite: function(){
+        //this clones map (breaks references to map in composite);
+        this.composite = this.walls.map((i)=>(
+                i.map( (p)=>(p) )
+            ));
+        this.composite[this.player.x][this.player.y] = 2;
+    }
+};
+function playerClick(move) {
+    let xOffset = (move % viewSide - (viewSide - 1) / 2);
+    let yOffset = (Math.floor(move / viewSide) - ((viewSide - 1) / 2)) * -1;
+
+    //TESTING CODE
+    world.player.x += xOffset;
+    world.player.y += yOffset;
+
+    //moveQueue will be genorated here
+    buildView();
+};
+function stepGame(){
+    //execute a move in the queue
+    //if no more moves are left delete interval
+    buidView();
+};
+var moveQueue = [];
+//width and height and NOT zero indexed
+
+function buildView() {
+    world.buildComposite();
+    var view = [];
+    for (let y = (viewSide - 1)/2; y >= (viewSide - 1)/2 * -1; y--){
+        for (let x = (viewSide - 1)/2 * -1; x <= (viewSide - 1)/2; x++){
+            view.push(world.getLocationValue(x + world.player.x, y + world.player.y));
+        }
+    }
+    view = view.map((value, index) => (
+        value * viewMask[index]
+    ));
+    window.updateViewState(view);
+};
+
 var Driver = React.createClass({
     getInitialState: function(){
-        return {directions: true};
+        return {
+            directions: true,
+            measureNode: undefined,
+            size: ["100px", "100px"],
+            viewState: window.viewMask };
+    },
+    __getNode: function(node){
+        this.setState({measureNode: node}, this.__setSize);
+    },
+    componentWillMount: function(){
+        window.updateViewState = (newState) => {
+            this.setState({viewState: newState});
+        };
+    },
+    componentDidMount: function(){
+        window.addEventListener("resize", this.__resizeWithTimeout);
+        window.buildView();
+    },
+    componentWillUnmount: function() {
+        window.removeEventListener("resize", this.__resizeWithTimeout);
+    },
+    __setSize: function(){
+        var newSize;
+        if (this.state.measureNode.offsetWidth > this.state.measureNode.offsetHeight){
+            newSize = [this.state.measureNode.offsetHeight + "px", this.state.measureNode.offsetHeight + "px" ];
+        } else {
+            newSize = [this.state.measureNode.offsetWidth + "px", this.state.measureNode.offsetWidth + "px" ];
+        }
+        this.setState({size: newSize});
+    },
+    //is this the right way to do this? i don't want the component to re-render a bazillion times when i resize the window...
+    __resizeTimeout: undefined,
+    __resizeWithTimeout: function(){
+        window.clearTimeout(this.__resizeTimeout);
+        this.__resizeTimeout = window.setTimeout(this.__setSize, 200);
+    },
+    __cellClick: function(index){
+        window.playerClick(index);
     },
     render: function(){
-        return <div>
+        return <div ref={this.__getNode}>
             {this.state.directions
                 ? <Directions onClick={
                     function(){this.setState({directions:false});}.bind(this)
-                }/>
-                : ""}
-            test
+                    }/>: ""}
+            <div
+                id="game-display"
+                style={{width: this.state.size[0], height: this.state.size[1]}} >
+                {this.state.viewState.map( (value, index) => (
+                    <Cell
+                        contains={value}
+                        key={index}
+                        onClick={this.__cellClick.bind(this, index)} />
+                    ))}
+            </div>
         </div>;
     }
 });
 
 const Directions = props => (
-    <div id="directions" onClick={props.onClick}>
+    <div id="directions" onClick={props.onClick} >
         <div>
-            <h1>FCC Roguelike</h1>
+            <h1>React Roguelike</h1>
             <ul>
-                <li>Selecting a tile to attempt to interact with it</li>
-                <li>Select an empty tile to move onto it</li>
-                <li>Select a tile with an enemy to attack them</li>
+                <li>Select an empty tile to move</li>
+                <li>Select an enemy to attack</li>
                 <li>Defeat the dungeon boss to win</li>
             </ul>
-            <span>click anywere to start</span>
+            <div>click to start</div>
         </div>
     </div>
 );
 
+const Cell = props => (
+    <div
+        className={"cell " + cellStates[props.contains]}
+        onClick={props.onClick}
+        ></div>
+);
+
 window.onload = function() {
+    world.generateNew();
     ReactDOM.render(React.createElement(
         Driver, null),
         document.getElementById("container") );
