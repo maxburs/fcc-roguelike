@@ -1,20 +1,3 @@
-const viewMask = [
-    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
-    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
-    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
-    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 ];
-
 const cellStates = [
     "hidden",   //0
     "empty",    //1
@@ -33,6 +16,7 @@ var world = {
     enemies: [],
     player: { x: 0, y: 0},
     composite: [],
+    view: [],
     getLocationValue: function(x, y) {
         if (x < 0 || x > this.width || y < 0 || y > this.height) {
             return 3;
@@ -49,6 +33,7 @@ var world = {
             }
         }
         this.buildComposite();
+        window.buildView();
     },
     buildComposite: function(){
         //this clones map (breaks references to map in composite);
@@ -59,6 +44,11 @@ var world = {
     }
 };
 function playerClick(move) {
+    if (window.world.view[move] === 0 || window.world.view[move] === 2 || window.world.view[move] === 3) {
+        console.log("invalid move");
+        return;
+    }
+
     let xOffset = (move % viewSide - (viewSide - 1) / 2);
     let yOffset = (Math.floor(move / viewSide) - ((viewSide - 1) / 2)) * -1;
 
@@ -67,7 +57,9 @@ function playerClick(move) {
     world.player.y += yOffset;
 
     //moveQueue will be genorated here
-    buildView();
+    window.world.buildComposite();
+    window.buildView();
+    window.updateViewState(window.world.view);
 };
 function stepGame(){
     //execute a move in the queue
@@ -78,17 +70,33 @@ var moveQueue = [];
 //width and height and NOT zero indexed
 
 function buildView() {
-    world.buildComposite();
-    var view = [];
-    for (let y = (viewSide - 1)/2; y >= (viewSide - 1)/2 * -1; y--){
-        for (let x = (viewSide - 1)/2 * -1; x <= (viewSide - 1)/2; x++){
-            view.push(world.getLocationValue(x + world.player.x, y + world.player.y));
+    const viewMask = [
+        0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+        0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+        0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+        0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+        0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 ];
+    
+    var newView = [];
+    for (let y = (window.viewSide - 1)/2; y >= (window.viewSide - 1)/2 * -1; y--){
+        for (let x = (window.viewSide - 1)/2 * -1; x <= (window.viewSide - 1)/2; x++){
+            newView.push(world.getLocationValue(x + world.player.x, y + world.player.y));
         }
     }
-    view = view.map((value, index) => (
+    window.world.view = newView.map((value, index) => (
         value * viewMask[index]
     ));
-    window.updateViewState(view);
+    return window.world.view;
 };
 
 var Driver = React.createClass({
@@ -97,7 +105,7 @@ var Driver = React.createClass({
             directions: true,
             measureNode: undefined,
             size: ["100px", "100px"],
-            viewState: window.viewMask };
+            viewState: window.world.view };
     },
     __getNode: function(node){
         this.setState({measureNode: node}, this.__setSize);

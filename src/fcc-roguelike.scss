@@ -58,13 +58,13 @@ html, body {
                 width: 100% / $gameWidthHeight;
                 height: 100% / $gameWidthHeight;
                 display: inline-block;
-                cursor: pointer;
             }
             .hidden { background-color: $black; }
             .empty { background-color: rgb(200, 200, 200); }
             .player { background-color: green; }
             .enemy { background-color: red; }
             .wall {background-color: grey; }
+            .cell:not(.hidden):not(.wall):not(.player) { cursor: pointer; }
         }
     }
 }

@@ -52,8 +52,7 @@ html, body {
     #container > div #game-display .cell {
       width: 6.6666666667%;
       height: 6.6666666667%;
-      display: inline-block;
-      cursor: pointer; }
+      display: inline-block; }
     #container > div #game-display .hidden {
       background-color: #1e1e1e; }
     #container > div #game-display .empty {
@@ -64,5 +63,7 @@ html, body {
       background-color: red; }
     #container > div #game-display .wall {
       background-color: grey; }
+    #container > div #game-display .cell:not(.hidden):not(.wall):not(.player) {
+      cursor: pointer; }
 
 /*# sourceMappingURL=fcc-roguelike.css.map */
