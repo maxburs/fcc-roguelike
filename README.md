@@ -1,1 +1,1 @@
-A simple roguelike game made for [freecodecamp.com]'s as part of learning React.
+A simple roguelike game made for [freecodecamp.com](https://www.freecodecamp.com) as part of learning React.
